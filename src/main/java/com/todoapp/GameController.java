@@ -20,78 +20,94 @@ import java.util.List;
 
 import static spark.Spark.*;
 
+/**
+ * GameController is used to communicate with the Javascript.
+ * It calls different methods from the GamerService according to route.
+ * 
+ * @author chenwang
+ *
+ */
 public class GameController {
-
-
+	
     private final GameService gameService;
+    private final Logger logger = LoggerFactory.getLogger(GameController.class);
     
-    private List<Board> boards = new ArrayList<Board>();
-    private List<State> states = new ArrayList<State>();
-    
-
     public GameController(GameService gameService) {
         this.gameService = gameService;
         setupEndpoints();
-        
     }
 
-    private void setupEndpoints() {
-    	
+    private void setupEndpoints() {	
     	//fetch board
-    	//input parameter is the gameId, it's supposed to return a list of four Obejcts Hare and Hounds
         get("/hareandhounds/api/games/:id" + "/board", "application/json", (request, response) -> {
             //decide which game board by ID
-        	Board board = boards.get(Integer.parseInt(request.params(":id")));
-			return gameService.getFourObj(board);
+			try {
+				response.status(200);
+				return gameService.fetchBoard(request.params(":id"));
+			} catch (GameService.GameServiceException ex) {
+				response.status(404);
+				return Collections.EMPTY_MAP;
+			}
         }, new JsonTransformer());
 
     	//fetch state 
-    	//input parameter is the gameId, it's supposed to return a state object with a state string
         get("/hareandhounds/api/games/:id" + "/state", "application/json", (request, response) -> {
-            String gameId = request.params(":id");
-            State state = states.get(Integer.parseInt(request.params(":id")));
-            System.out.println(state.gameId + " is  "+ state.state);
-			return state;
+			try {
+				response.status(200);
+				return gameService.fetchState(request.params(":id"));
+			} catch (GameService.GameServiceException ex) {
+				response.status(404);
+				return Collections.EMPTY_MAP;
+			}
         }, new JsonTransformer());
+        
+
+        //Start a new game.
+        post("/hareandhounds/api/games", "application/json", (request, response) -> {              	
+        	try {
+				response.status(201);
+				return gameService.createNewGame(request.body());   
+			} catch (Exception e) {
+				logger.error("Unable to create a new game.");
+				return Collections.EMPTY_MAP;
+			}
+        }, new JsonTransformer());
+        
+        //Join a game
+        put("/hareandhounds/api/games/:id", "application/json", (request, response) -> {
+            try {
+				response.status(200);
+				return gameService.joinGame(request.params(":id"));
+			} catch (GameService.GameServiceException ex) {
+				if (ex.getMessage().equals("GamerService.joinGame: INVALID_GAME_ID.")) {
+					response.status(404);
+				} else {
+					response.status(410);
+				}	
+				return Collections.EMPTY_MAP;
+			}
+        }, new JsonTransformer());
+        
         
     	//Move 
         post("/hareandhounds/api/games/:id/turns", "application/json", (request, response) -> {
-            //decide which game board by ID
-        	String gameId = request.params(":id");
-        	Board board = boards.get(Integer.parseInt(gameId));
-        	State state = states.get(Integer.parseInt(gameId));
-
-            gameService.move(request.body(), board, state);
-			response.status(201);
+            try {
+				//decide which game board by ID
+            	response.status(201);
+				gameService.move(request.params(":id"), request.body());
+				
+			} catch (GameService.GameServiceException ex) {
+				if (ex.getMessage().equals("GamerService.move: INVALID_GAME_ID.")){
+					response.status(404);
+				} else if (ex.getMessage().equals("GamerService.move: INVALID_PLAYER_ID.")) {
+					response.status(404);
+				} else if(ex.getMessage().equals("GamerService.move: INCORRECT_TURN.")) {
+					response.status(422);
+				} else if(ex.getMessage().equals("GamerService.move: ILLEGAL_MOVE.")){
+					response.status(422);
+				}
+			}
             return Collections.EMPTY_MAP;
-        }, new JsonTransformer());
-
-        
-    	//Creat new Game
-        post("/hareandhounds/api/games", "application/json", (request, response) -> {            
-            int gameid = boards.size();
-            String pieceType = new Gson().fromJson(request.body(), Piece.class).getPieceType();
-            Board b = new Board(Integer.toString(gameid), pieceType);
-            boards.add(b); 
-            
-            State state = new State(Integer.toString(gameid), pieceType);
-            states.add(state);
-            
-            Piece piece = new Piece(Integer.toString(gameid), "1", pieceType, 0, 0);
-			response.status(201);
-            return piece;
-        }, new JsonTransformer());
-        
-        //join game
-        put("/hareandhounds/api/games/:id", "application/json", (request, response) -> {
-            String gameId = request.params(":id");
-            State state = states.get(Integer.parseInt(gameId));
-            
-            String joiner_Type = state.getDifferentPieceType();
-            //no matter which type the joiner choose, just let Hound go first
-            state.setTurn_Hound();
-			Piece piece = new Piece(gameId, "2", joiner_Type, 0, 0);
-			return piece;
         }, new JsonTransformer());
     }
 }
