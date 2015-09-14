@@ -7,8 +7,7 @@ import java.util.Hashtable;
 public class Board {
 	private String gameId;
 	private int[][] board;	// use a 5*3 int array to represent the status of the board
-	private final String firstPlayerType;
-	
+	private final String firstPlayerType;	
 	private Hashtable<String, Integer> boards = new Hashtable<String, Integer>();
 	
 	public Board(String gameId, String piece_type) {

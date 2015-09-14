@@ -44,7 +44,7 @@ public class GameController {
 			try {
 				response.status(200);
 				return gameService.fetchBoard(request.params(":id"));
-			} catch (GameService.GameServiceException ex) {
+			} catch (GameService.GameServiceIdException ex) {
 				response.status(404);
 				return Collections.EMPTY_MAP;
 			}
@@ -55,7 +55,7 @@ public class GameController {
 			try {
 				response.status(200);
 				return gameService.fetchState(request.params(":id"));
-			} catch (GameService.GameServiceException ex) {
+			} catch (GameService.GameServiceIdException ex) {
 				response.status(404);
 				return Collections.EMPTY_MAP;
 			}
@@ -78,14 +78,12 @@ public class GameController {
             try {
 				response.status(200);
 				return gameService.joinGame(request.params(":id"));
-			} catch (GameService.GameServiceException ex) {
-				if (ex.getMessage().equals("GamerService.joinGame: INVALID_GAME_ID.")) {
-					response.status(404);
-				} else {
-					response.status(410);
-				}	
-				return Collections.EMPTY_MAP;
+			} catch (GameService.GameServiceIdException ex) {
+				response.status(404);
+			} catch (GameService.GameServiceJoinException ex) {
+				response.status(410);
 			}
+            return Collections.EMPTY_MAP;		     
         }, new JsonTransformer());
         
         
@@ -96,16 +94,12 @@ public class GameController {
             	response.status(201);
 				gameService.move(request.params(":id"), request.body());
 				
-			} catch (GameService.GameServiceException ex) {
-				if (ex.getMessage().equals("GamerService.move: INVALID_GAME_ID.")){
-					response.status(404);
-				} else if (ex.getMessage().equals("GamerService.move: INVALID_PLAYER_ID.")) {
-					response.status(404);
-				} else if(ex.getMessage().equals("GamerService.move: INCORRECT_TURN.")) {
-					response.status(422);
-				} else if(ex.getMessage().equals("GamerService.move: ILLEGAL_MOVE.")){
-					response.status(422);
-				}
+			} catch (GameService.GameServiceIdException ex){
+				response.status(404);
+				return new ResponseContent(ex.getMessage());
+			} catch (GameService.GameServiceMoveException ex) {
+				response.status(422);
+				return new ResponseContent(ex.getMessage());
 			}
             return Collections.EMPTY_MAP;
         }, new JsonTransformer());

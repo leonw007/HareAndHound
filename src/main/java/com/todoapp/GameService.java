@@ -29,12 +29,11 @@ public class GameService {
 	 * @return a list of four piece objects, which show the current board status.
 	 * @throws GameServiceException
 	 */
-    public List<Piece> fetchBoard(String gameId) throws GameServiceException { 
-    	
+    public List<Piece> fetchBoard(String gameId) throws GameServiceIdException {    	
     	//To prevent the case that server has been restarted but client keeps running
     	if(Integer.parseInt(gameId)>= boards.size()) {
-    		logger.error("GamerService.fetchBoard: INVALID_GAME_ID.");
-    		throw new GameServiceException("GamerService.fetchBoard: INVALID_GAME_ID.", null);
+    		logger.error("INVALID_GAME_ID.");
+    		throw new GameServiceIdException("INVALID_GAME_ID.", null);
     	}
     	
     	int[][] board = boards.get(Integer.parseInt(gameId)).getBoard();
@@ -59,15 +58,14 @@ public class GameService {
      * @return a State object
      * @throws GameServiceException
      */
-    public State fetchState(String gameId) throws GameServiceException{
+    public State fetchState(String gameId) throws GameServiceIdException{
     	
     	if(Integer.parseInt(gameId)>= states.size()) {
-    		logger.error("GamerService.fetchState: INVALID_GAME_ID.");
-    		throw new GameServiceException("GamerService.fetchState: INVALID_GAME_ID.", null);
+    		logger.error("INVALID_GAME_ID");
+    		throw new GameServiceIdException("INVALID_GAME_ID", null);
     	}
     		
     	return states.get(Integer.parseInt(gameId));
-   	
     }
 	
     /**
@@ -88,17 +86,17 @@ public class GameService {
 	 * @param gameId A string game Id to identify which game to join
 	 * @return a Piece object to carry joiner's "gameId", "playerId", playerId".
 	 */
-	public Piece joinGame(String gameId) throws GameServiceException{		
+	public Piece joinGame(String gameId) throws GameServiceIdException, GameServiceJoinException {		
         State state = states.get(Integer.parseInt(gameId));
         String joiner_Type = state.getDifferentPieceType();
         
         if(states.size() <= Integer.parseInt(gameId)){
         	//invalid game id, because it has not been created yet
-    		logger.error("GamerService.joinGame: INVALID_GAME_ID.");
-    		throw new GameServiceException("GamerService.joinGame: INVALID_GAME_ID.", null);
+    		logger.error("INVALID_GAME_ID");
+    		throw new GameServiceIdException("INVALID_GAME_ID", null);
         } else if (!states.get(Integer.parseInt(gameId)).state.equals("WAITING_FOR_SECOND_PLAYER")) {
-    		logger.error("GamerService.joinGame: GAME_JOINED.");
-    		throw new GameServiceException("GamerService.joinGame: GAME_JOINED.", null);
+    		logger.error("GAME_JOINED");
+    		throw new GameServiceJoinException("GAME_JOINED", null);
         }
         
         //no matter which type the joiner choose, just let Hound go first
@@ -113,7 +111,7 @@ public class GameService {
 	 * @param gameId A string game Id, then the system can identify the correct board and state info
 	 * @param body a String contains all other info about this move:  playerId: <id>, fromX: <x>, fromY: <y>, toX: <x>, toY: <y>
 	 */
-    public void move(String gameId, String body) throws GameServiceException {
+    public void move(String gameId, String body) throws GameServiceIdException, GameServiceMoveException{
     	Board board = boards.get(Integer.parseInt(gameId));
     	State state = states.get(Integer.parseInt(gameId));
     	PieceJson piece_data = new Gson().fromJson(body, PieceJson.class);
@@ -123,13 +121,13 @@ public class GameService {
     	
     	if(states.size() <= Integer.parseInt(gameId)) {
 			//invalid game id, because it has not been created yet
-    		logger.error("GamerService.move: INVALID_GAME_ID.");
-    		throw new GameServiceException("GamerService.move: INVALID_GAME_ID.", null);
+    		logger.error("INVALID_GAME_ID");
+    		throw new GameServiceIdException("INVALID_GAME_ID", null);
 		}
     	
     	if(!piece_data.getPlayerId().equals("1") && !piece_data.getPlayerId().equals("2")) {
-    		logger.error("GamerService.move: INVALID_PLAYER_ID.");
-    		throw new GameServiceException("GamerService.move: INVALID_PLAYER_ID.", null);
+    		logger.error("INVALID_PLAYER_ID");
+    		throw new GameServiceIdException("INVALID_PLAYER_ID", null);
     	}
 	
     	//check whether this is a valid move (include correct turn)
@@ -143,12 +141,12 @@ public class GameService {
     		updateStateAfterMove(board, state);
     	} else if (!checkValidTurn(gameId, body)) {
     		//not a valid turn
-    		logger.error("GamerService.move: INCORRECT_TURN.");
-    		throw new GameServiceException("GamerService.move: INCORRECT_TURN.", null);
+    		logger.error("INCORRECT_TURN");
+    		throw new GameServiceMoveException("INCORRECT_TURN", null);
     	} else {
     		//not a valid move
-    		logger.error("GamerService.move: ILLEGAL_MOVE.");
-    		throw new GameServiceException("GamerService.move: ILLEGAL_MOVE.", null);
+    		logger.error("ILLEGAL_MOVE");
+    		throw new GameServiceMoveException("ILLEGAL_MOVE", null);
     	}
     }
      
@@ -201,18 +199,34 @@ public class GameService {
     	int start = board.getBoard()[piece_data.getFromY()][piece_data.getFromX()];
     	int destination =  board.getBoard()[piece_data.getToY()][piece_data.getToX()];
     	
-    	if(start == 1 && destination == 0 &&
-    			piece_data.getFromX() <= piece_data.getToX() && 
-    			piece_data.getToX() - piece_data.getFromX() <= 1 && 
-    			piece_data.getToY() - piece_data.getFromY() <= 1) {
-    		return true;
-    	} else if (start == 2 && destination == 0 &&
+    	// there are four diagonals which need to be considered 
+    	if(piece_data.getFromX() == 1 && piece_data.getFromY() ==1 || 
+    			piece_data.getFromX() == 0 && piece_data.getFromY() == 2 ||
+    			piece_data.getFromX() == 1 && piece_data.getFromY() == 3 || 
+    			piece_data.getFromX() == 2 && piece_data.getFromY() == 2 ) {
+    		if (Math.abs(piece_data.getToX() - piece_data.getFromX()) == 1 &&
+    				Math.abs(piece_data.getToY() - piece_data.getFromY()) == 1) {
+    			return false;
+    		}
+    	}
+    	
+    	
+    	if (destination == 0 &&
     			Math.abs(piece_data.getToY() - piece_data.getFromY()) <= 1 && 
-    			Math.abs(piece_data.getToX() - piece_data.getFromX()) <= 1) {
-    		return true;
+    			Math.abs(piece_data.getToX() - piece_data.getFromX()) <= 1) {	
+        	if(start == 1 && piece_data.getFromX() <= piece_data.getToX() ) {
+        		return true;
+        	} else if (start == 2) {
+        		return true;
+        	} else {
+        		return false;
+        	}
+    		
     	} else {
     		return false;
     	}
+    	
+    	
     }
     
     /**
@@ -240,10 +254,25 @@ public class GameService {
     // Helper Classes and Methods
     //-----------------------------------------------------------------------------//
 
-    public static class GameServiceException extends Exception {
-        public GameServiceException(String message, Throwable cause) {
+    public static class GameServiceIdException extends Exception {
+        public GameServiceIdException(String message, Throwable cause) {
             super(message, cause);
         }
     }
+    
+    public static class GameServiceJoinException extends Exception {
+        public GameServiceJoinException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+    
+    public static class GameServiceMoveException extends Exception {
+        public GameServiceMoveException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+    
+    
+    
 
 }

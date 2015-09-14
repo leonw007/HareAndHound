@@ -72,6 +72,7 @@ var appModel = (function () {
         return $.post('/hareandhounds/api/games/' + state.gameId + "/turns", JSON.stringify(postData))
             .fail(function (jqXHR) {
                 //Todo
+                // console.log("test is ");
                 console.log('Error ' + jqXHR.status);
             });
     };
