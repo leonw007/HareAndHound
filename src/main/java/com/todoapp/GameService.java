@@ -3,10 +3,16 @@ package com.todoapp;
 import com.google.gson.Gson;
 
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.List;
+
+import javax.sql.DataSource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.sql2o.Connection;
+import org.sql2o.Sql2o;
+import org.sql2o.Sql2oException;
 
 /**
  * GameService is a class which provides service for the game running.
@@ -20,8 +26,30 @@ public class GameService {
 	
     private List<Board> boards = new ArrayList<Board>();
     private List<State> states = new ArrayList<State>();
+    private Sql2o db;
+
 	
     private final Logger logger = LoggerFactory.getLogger(GameController.class);
+    
+    
+    
+
+	public GameService(DataSource dataSource) throws GameServiceException {
+		db = new Sql2o(dataSource);
+		
+        //Create the schema for the database if necessary. This allows this
+        //program to mostly self-contained. But this is not always what you want;
+        //sometimes you want to create the schema externally via a script.
+        try (Connection conn = db.open()) {
+            String sql1 = "CREATE TABLE IF NOT EXISTS board (game_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                         "                                 title TEXT, done BOOLEAN, created_on TIMESTAMP)" ;
+            conn.createQuery(sql1).executeUpdate();
+        } catch(Sql2oException ex) {
+            logger.error("Failed to create schema at startup", ex);
+            throw new GameServiceException("Failed to create schema at startup", ex);
+        }
+		
+	}
 
 	/**
 	 * Fetch the board: get board info and return it to the front end. It keeps updating.
@@ -186,7 +214,7 @@ public class GameService {
     
     /**
      * Check whether this move is valid
- * @param gameId A string game Id, then the system can identify the correct board and state info
+     * @param gameId A string game Id, then the system can identify the correct board and state info
 	 * @param body a String contains all other info about this move:  playerId: <id>, fromX: <x>, fromY: <y>, toX: <x>, toY: <y>
      * @return if it's a valid move, return true; if not, return false;
      */
@@ -235,7 +263,7 @@ public class GameService {
      * @param state the state
      */
     public void updateStateAfterMove(Board board, State state){
-		switch (board.checkWin()) {
+		switch (checkWin(board)) {
 		case "HareTrapped":
 			state.setWin_Hound();
 			break;
@@ -248,12 +276,67 @@ public class GameService {
 			break;
 		}
     }
+    
+    /**
+     * Through checking a board's info to see whether hare or hound win
+     * @param b a board
+     * @return a string which indicates who wins because of what reason
+     */
+	public String checkWin(Board b){
+		int[][] board = b.getBoard();
+		Hashtable<String, Integer> boards = b.getBoards();
+		
+		//get 4 piece location
+		//use a arraylist to represent the y index of three hounds
+		ArrayList<Integer> hounds_y = new ArrayList<Integer>();
+		//use an int to represent the y index of the hare
+		int hare_y = 0;
+		for(int i=0; i<board.length; i++) {
+			for(int j=0; j<board[1].length; j++) {
+				if (board[i][j] == 1) {
+					hounds_y.add(j);
+				} else if (board[i][j] == 2) {
+					hare_y = j;
+				}
+			}
+		}
+		
+		//check if hare is trapped: 3 cases.
+		if(board[0][2]==2 && board[0][1]==1 && board[0][3]==1 && board[1][2]==1) {
+			return "HareTrapped";
+		}
+		if(board[2][2]==2 && board[2][1]==1 && board[2][3]==1 && board[1][2]==1) {
+			return "HareTrapped";
+		}
+		if(board[1][4]==2 && board[0][3]==1 && board[1][3]==1 && board[2][3]==1) {
+			return "HareTrapped";
+		}
+		
+		// hare win by escape
+		if(hounds_y.get(0) >= hare_y
+				&& hounds_y.get(1) >= hare_y
+				&& hounds_y.get(2) >= hare_y) {
+			return "HareEscaped";
+		}
+		
+		//check stalling
+		if(boards.containsValue(3)){
+			return "Stalling";
+		}
+		return "Continue";	
+	}
    
 
     //-----------------------------------------------------------------------------//
     // Helper Classes and Methods
     //-----------------------------------------------------------------------------//
 
+    public static class GameServiceException extends Exception {
+        public GameServiceException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+    
     public static class GameServiceIdException extends Exception {
         public GameServiceIdException(String message, Throwable cause) {
             super(message, cause);

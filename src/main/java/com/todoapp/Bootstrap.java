@@ -25,6 +25,14 @@ public class Bootstrap {
     private static final Logger logger = LoggerFactory.getLogger(Bootstrap.class);
 
     public static void main(String[] args) throws Exception {
+    	
+        //Check if the database file exists in the current directory. Abort if not
+        DataSource dataSource = configureDataSource();
+        if (dataSource == null) {
+            System.out.printf("Could not find todo.db in the current directory (%s). Terminating\n",
+                    Paths.get(".").toAbsolutePath().normalize());
+            System.exit(1);
+        }
 
         //Specify the IP address and Port at which the server should be run
         ipAddress(IP_ADDRESS);
@@ -33,7 +41,7 @@ public class Bootstrap {
         //Specify the sub-directory from which to serve static resources (like html and css)
         staticFileLocation("/public");
 
-        GameService model = new GameService();
+        GameService model = new GameService(dataSource);
 		new GameController(model);
     }
 

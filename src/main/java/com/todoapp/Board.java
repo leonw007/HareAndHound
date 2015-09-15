@@ -1,6 +1,7 @@
 package com.todoapp;
 
 import java.util.ArrayList;
+
 import java.util.Arrays;
 import java.util.Hashtable;
 
@@ -43,47 +44,11 @@ public class Board {
 		}
 	}
 	
-	public String checkWin(){
-		//get 4 piece location
-		//use a arraylist to represent the y index of three hounds
-		ArrayList<Integer> hounds_y = new ArrayList<Integer>();
-		//use an int to represent the y index of the hare
-		int hare_y = 0;
-		for(int i=0; i<board.length; i++) {
-			for(int j=0; j<board[1].length; j++) {
-				if (board[i][j] == 1) {
-					hounds_y.add(j);
-				} else if (board[i][j] == 2) {
-					hare_y = j;
-				}
-			}
-		}
-		
-		//check if hare is trapped: 3 cases.
-		if(board[0][2]==2 && board[0][1]==1 && board[0][3]==1 && board[1][2]==1) {
-			return "HareTrapped";
-		}
-		if(board[2][2]==2 && board[2][1]==1 && board[2][3]==1 && board[1][2]==1) {
-			return "HareTrapped";
-		}
-		if(board[1][4]==2 && board[0][3]==1 && board[1][3]==1 && board[2][3]==1) {
-			return "HareTrapped";
-		}
-		
-		// hare win by escape
-		if(hounds_y.get(0) >= hare_y
-				&& hounds_y.get(1) >= hare_y
-				&& hounds_y.get(2) >= hare_y) {
-			return "HareEscaped";
-		}
-		
-		//check stalling
-		if(boards.containsValue(3)){
-			return "Stalling";
-		}
-		return "Continue";	
-	}
 	
+	public Hashtable<String, Integer> getBoards() {
+		return boards;
+	}
+
 	public String getFirstPlayerType() {
 		return firstPlayerType;
 	}
