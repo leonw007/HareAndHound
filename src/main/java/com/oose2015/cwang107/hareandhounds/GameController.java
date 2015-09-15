@@ -3,7 +3,7 @@
 // https://blog.openshift.com/developing-single-page-web-applications-using-java-8-spark-mongodb-and-angularjs/
 //-------------------------------------------------------------------------------------------------------------//
 
-package com.todoapp;
+package com.oose2015.cwang107.hareandhounds;
 
 import com.google.gson.Gson;
 

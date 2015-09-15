@@ -4,7 +4,7 @@
 //-------------------------------------------------------------------------------------------------------------//
 
 
-package com.todoapp;
+package com.oose2015.cwang107.hareandhounds;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

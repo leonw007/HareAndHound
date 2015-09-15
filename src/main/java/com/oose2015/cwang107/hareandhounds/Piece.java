@@ -1,4 +1,4 @@
-package com.todoapp;
+package com.oose2015.cwang107.hareandhounds;
 
 public class Piece {
 
