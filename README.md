@@ -1,5 +1,3 @@
-Hare and Hounds 
-=================
 
 This repository contains a small Hare and Hounds web application.  It is a complete web stack from frontend to server to database.
 
@@ -27,3 +25,4 @@ Now simply point your browser to http://localhost:8080 to use the application.
 
 [OOSE Tools]:http://pl.cs.jhu.edu/oose/resources/tools.shtml
 [OOSE Web Java Lecture]: http://pl.cs.jhu.edu/oose/lectures/webjava.shtml
+
