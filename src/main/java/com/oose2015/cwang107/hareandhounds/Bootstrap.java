@@ -18,6 +18,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+/**
+ * The driver class containing main method. 
+ * @author chenwang
+ *
+ */
 public class Bootstrap {
     public static final String IP_ADDRESS = "localhost";
     public static final int PORT = 8080;
@@ -29,7 +34,7 @@ public class Bootstrap {
         //Check if the database file exists in the current directory. Abort if not
         DataSource dataSource = configureDataSource();
         if (dataSource == null) {
-            System.out.printf("Could not find todo.db in the current directory (%s). Terminating\n",
+            System.out.printf("Could not find game.db in the current directory (%s). Terminating\n",
                     Paths.get(".").toAbsolutePath().normalize());
             System.exit(1);
         }
@@ -48,19 +53,19 @@ public class Bootstrap {
     /**
      * Check if the database file exists in the current directory. If it does
      * create a DataSource instance for the file and return it.
-     * @return javax.sql.DataSource corresponding to the todo database
+     * @return javax.sql.DataSource corresponding to the game database
      */
     private static DataSource configureDataSource() {
-        Path todoPath = Paths.get(".", "todo.db");
-        if ( !(Files.exists(todoPath) )) {
-            try { Files.createFile(todoPath); }
+        Path gamePath = Paths.get(".", "game.db");
+        if ( !(Files.exists(gamePath) )) {
+            try { Files.createFile(gamePath); }
             catch (java.io.IOException ex) {
                 logger.error("Failed to create toto.db file in current directory. Aborting");
             }
         }
 
         SQLiteDataSource dataSource = new SQLiteDataSource();
-        dataSource.setUrl("jdbc:sqlite:todo.db");
+        dataSource.setUrl("jdbc:sqlite:game.db");
         return dataSource;
 
     }

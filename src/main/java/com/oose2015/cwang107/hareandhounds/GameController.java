@@ -32,11 +32,18 @@ public class GameController {
     private final GameService gameService;
     private final Logger logger = LoggerFactory.getLogger(GameController.class);
     
+    /**
+     * Initialize game service
+     * @param gameService generated at the main method
+     */
     public GameController(GameService gameService) {
         this.gameService = gameService;
         setupEndpoints();
     }
 
+    /**
+     * the interface communicating with the front end javascript
+     */
     private void setupEndpoints() {	
     	//fetch board
         get("/hareandhounds/api/games/:id" + "/board", "application/json", (request, response) -> {
